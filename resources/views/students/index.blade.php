@@ -1,13 +1,20 @@
 @extends('layouts.app')
 
 @section('content')
-    <h1>Students</h1>
-    <a href="{{ route('students.create') }}" class="btn btn-primary">Add Student</a>
+    {{-- Display success message if available --}}
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
 
-    <!-- Form Carian -->
+    <h1 class="mb-4">Students</h1>
+    <a href="{{ route('students.create') }}" class="btn btn-primary mb-4">Add Student</a>
+
+    <!-- Search Form -->
     <form method="GET" action="{{ route('students.index') }}" class="mb-4">
-        <input type="text" name="search" placeholder="Cari pelajar..." value="{{ request('search') }}" class="border p-2">
-        <button type="submit" class="bg-blue-500 text-white p-2">Cari</button>
+        <input type="text" name="search" placeholder="Search student..." value="{{ request('search') }}" class="border p-2 w-full max-w-md mb-4">
+        <button type="submit" class="bg-blue-500 text-white p-2">Search</button>
     </form>
 
     <table class="min-w-full table-auto border-collapse bg-white shadow-md rounded-lg overflow-hidden">
@@ -32,8 +39,9 @@
                     <td class="px-4 py-2">{{ $student->gender }}</td>
                     <td class="px-4 py-2">{{ $student->admission_session }}</td>
                     <td class="px-4 py-2">
-                        <a href="{{ route('students.edit', $student->student_id) }}" class="text-blue-600">Edit</a>
-                        <form action="{{ route('students.destroy', $student->student_id) }}" method="POST" style="display:inline;">
+                        <!-- Update route edited to use student->id -->
+                        <a href="{{ route('students.edit', $student->id) }}" class="text-blue-600">Edit</a>
+                        <form action="{{ route('students.destroy', $student->id) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600">Delete</button>

@@ -14,4 +14,11 @@ class Exam extends Model
 
     // Tentukan kolum-kolum yang boleh diisi (optional)
     protected $fillable = ['subject_id', 'exam_date', 'total_marks']; // Sesuaikan mengikut keperluan
+
+    // Fungsi hubungan dengan model Subject
+    public function subject()
+    {
+        // Menyatakan bahawa 'exam' mempunyai satu 'subject' melalui 'subject_id'
+        return $this->belongsTo(Subject::class, 'subject_id');
+    }
 }

@@ -8,10 +8,21 @@ use Illuminate\Http\Request;
 class StudentController extends Controller
 {
     // Menu Students - paparkan senarai pelajar
-    public function index()
+    public function index(Request $request)
     {
-        $students = Student::all(); // Mengambil semua data pelajar
-        return view('students.index', compact('students')); // Menghantar data ke view
+        $search = $request->input('search');  // Ambil nilai carian
+        
+        if ($search) {
+            $students = Student::where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('matric_no', 'like', "%{$search}%")
+                                ->get();
+        } else {
+            // Jika tiada carian, ambil semua pelajar
+            $students = Student::all();
+        }
+
+        return view('students.index', compact('students'));
     }
 
     // Form untuk menambah pelajar baru
@@ -23,82 +34,84 @@ class StudentController extends Controller
     // Simpan pelajar baru dalam pangkalan data
     public function store(Request $request)
     {
-        // Validasi input
+        // Validate data (optional tapi bagus ada)
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:students,email',
-            'matric_no' => 'required|string|max:20',
-            'class' => 'required|string|max:50',
-            'gender' => 'required|string|max:1',
-            'admission_session' => 'required|string|max:4', // Validasi sesi kemasukan
+            'name' => 'required',
+            'email' => 'required|email',
+            'matric_no' => 'required',
+            'class' => 'required',
+            'gender' => 'required',
+            'admission_session' => 'required',
         ]);
 
-        // Menyimpan data pelajar
+        // Buat objek pelajar baru
         $student = new Student();
         $student->name = $request->name;
         $student->email = $request->email;
         $student->matric_no = $request->matric_no;
         $student->class = $request->class;
         $student->gender = $request->gender;
-        $student->admission_session = $request->admission_session; // Menyimpan sesi kemasukan
-        $student->created_by = auth()->id(); // Menetapkan ID pengguna yang log masuk secara automatik
-        $student->updated_by = auth()->id(); // Menetapkan ID pengguna yang log masuk secara automatik
-        $student->save();
+        $student->admission_session = $request->admission_session;
+        $student->created_by = now();  // Timestamp semasa untuk created_by
+        $student->updated_by = now();  // Timestamp semasa untuk updated_by
 
-        // Mesej kejayaan
-        session()->flash('success', 'Student added successfully!');
+        // Simpan data pelajar ke dalam pangkalan data
+        $student->save(); // <-- penting ni!
 
-        return redirect()->route('students.index');
+        return redirect()->route('students.index')->with('success', 'Student added successfully!');
     }
 
     // Paparkan maklumat pelajar
-    public function show($id)
+    public function show($id) // Tukar student_id kepada id
     {
-        $student = Student::findOrFail($id);
+        $student = Student::where('id', $id)->firstOrFail(); // Tukar student_id kepada id
         return view('students.show', compact('student'));  // Pastikan 'admission_session' ada dalam 'student'
     }
 
     // Edit Matric No
-    public function editMatric($student_id)
+    public function editMatric($id) // Tukar student_id kepada id
     {
-        $student = Student::where('student_id', $student_id)->firstOrFail();
+        $student = Student::where('id', $id)->firstOrFail(); // Tukar student_id kepada id
         return view('students.edit-matric', compact('student'));
     }
 
     // Edit Class
-    public function editClass($student_id)
+    public function editClass($id) // Tukar student_id kepada id
     {
-        $student = Student::where('student_id', $student_id)->firstOrFail();
+        $student = Student::where('id', $id)->firstOrFail(); // Tukar student_id kepada id
         return view('students.edit-class', compact('student'));
     }
 
     // Edit Gender
-    public function editGender($student_id)
+    public function editGender($id) // Tukar student_id kepada id
     {
-        $student = Student::where('student_id', $student_id)->firstOrFail();
+        $student = Student::where('id', $id)->firstOrFail(); // Tukar student_id kepada id
         return view('students.edit-gender', compact('student'));
     }
 
     // Form untuk mengedit maklumat pelajar
-    public function edit($student_id)
+    public function edit($id) // Tukar student_id kepada id
     {
-        // Cari student berdasarkan student_id
-        $student = Student::where('student_id', $student_id)->firstOrFail();
+        // Cari student berdasarkan id
+        $student = Student::where('id', $id)->firstOrFail(); // Tukar student_id kepada id
         return view('students.edit', compact('student'));
     }
 
     // Kemaskini maklumat pelajar
-    public function update(Request $request, Student $student)
+    public function update(Request $request, $id) // Tukar student_id kepada id
     {
         // Validasi input
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:students,email,' . $student->id,
+            'email' => 'required|email|unique:students,email,' . $id,  // Menggunakan id
             'matric_no' => 'required|string|max:20',
             'class' => 'required|string|max:50',
             'gender' => 'required|string|max:1',
             'admission_session' => 'required|string|max:4',
         ]);
+
+        // Cari pelajar berdasarkan id
+        $student = Student::where('id', $id)->firstOrFail(); // Tukar student_id kepada id
 
         // Kemaskini data pelajar
         $student->name = $request->name;
@@ -106,18 +119,20 @@ class StudentController extends Controller
         $student->matric_no = $request->matric_no;
         $student->class = $request->class;
         $student->gender = $request->gender;
-        $student->admission_session = $request->admission_session; // Kemas kini sesi kemasukan
-        $student->updated_by = auth()->id(); // Menetapkan ID pengguna yang log masuk untuk kemaskini
+        $student->admission_session = $request->admission_session;
+        $student->updated_by = now(); // Timestamp semasa untuk updated_by
+
+        // Simpan perubahan
         $student->save();
 
         return redirect()->route('students.index')->with('success', 'Student updated successfully!');
     }
 
     // Hapus pelajar
-    public function destroy($student_id)
+    public function destroy($id) // Tukar student_id kepada id
     {
-        // Cari student berdasarkan student_id
-        $student = Student::where('student_id', $student_id)->firstOrFail();
+        // Cari student berdasarkan id
+        $student = Student::where('id', $id)->firstOrFail(); // Tukar student_id kepada id
         $student->delete();
         return redirect()->route('students.index')->with('success', 'Student deleted successfully!');
     }
